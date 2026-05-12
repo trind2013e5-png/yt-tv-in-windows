@@ -2,9 +2,9 @@ import sys
 import subprocess
 def install_dependencies():
  try:
- import PyQt5
- import PyQt5.QtWebEngineWidgets
- except ImportError:
+     import PyQt5
+     import PyQt5.QtWebEngineWidgets
+  except ImportError:
  subprocess.check_call([sys.executable, "-m", "pip", "install", "PyQt5", "PyQtWebEngine"])
 
 install_dependencies()
