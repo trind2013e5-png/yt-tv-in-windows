@@ -1,11 +1,13 @@
 import sys
 import subprocess
+
+# --- TỰ ĐỘNG CÀI THƯ VIỆN ---
 def install_dependencies():
- try:
-     import PyQt5
-     import PyQt5.QtWebEngineWidgets
-  except ImportError:
- subprocess.check_call([sys.executable, "-m", "pip", "install", "PyQt5", "PyQtWebEngine"])
+    try:
+        import PyQt5
+        import PyQt5.QtWebEngineWidgets
+    except ImportError:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "PyQt5", "PyQtWebEngine"])
 
 install_dependencies()
 from PyQt5.QtCore import *
