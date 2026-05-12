@@ -27,36 +27,33 @@ jobs:
         pip install pyinstaller autopep8
         if (Test-Path requirements.txt) { pip install -r requirements.txt }
 
-    - name: Auto-fix Python Indentation (Sửa lỗi căn lề tự động)
+    - name: Auto-fix Python Indentation
       run: |
-        # Công cụ này sẽ tự động lùi dòng đúng 4 space và sửa lỗi cú pháp cơ bản
         autopep8 --in-place --aggressive --aggressive main.py
 
-    - name: Build Single EXE (Bản 1 file)
+    - name: Build Single EXE
       run: |
         pyinstaller --onefile --noconsole --name "yt-tv-in-windows" main.py
 
-    - name: Build Directory (Bản nhiều file)
+    - name: Build Directory
       run: |
         pyinstaller --noconsole --name "yt-tv-in-windows-folder" --distpath ./dist-folder main.py
 
-    - name: Create ZIP for Multi-file version
+    - name: Create ZIP
       run: |
-        # Tạo thư mục dist nếu chưa có để tránh lỗi khi nén
         if (!(Test-Path dist)) { New-Item -ItemType Directory -Path dist }
         Compress-Archive -Path ./dist-folder/yt-tv-in-windows-folder/* -DestinationPath ./dist/yt-tv-in-windows.zip
 
     - name: Create Release and Upload Assets
       uses: softprops/action-gh-release@v2
       with:
-        # Sử dụng số lần chạy để tránh lỗi trùng lặp Tag nếu để v1.0.0 cố định
-        tag_name: "v1.0.0"
-        name: Release v${{ github.run_number }}
+        tag_name: "1.0.0"  # Đã đổi thành tag cố định theo ý bạn
+        name: "Release 1.0.0 (Build ${{ github.run_number }})" # Tên release vẫn có số build để dễ phân biệt
         draft: false
         prerelease: false
+        make_latest: true # Luôn đánh dấu đây là bản mới nhất
         files: |
           dist/yt-tv-in-windows.exe
           dist/yt-tv-in-windows.zip
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
