@@ -1,29 +1,17 @@
 import sys
-import subprocess
-
-# --- TỰ ĐỘNG CÀI THƯ VIỆN ---
-def install_dependencies():
-    try:
-        import PyQt5
-        import PyQt5.QtWebEngineWidgets
-    except ImportError:
-        # Lùi vào 8 dấu cách (thẳng hàng với các lệnh import ở trên)
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "PyQt5", "PyQtWebEngine"])
-
-# Gọi hàm cài đặt trước khi chạy các phần khác
-install_dependencies()
+import os
 
 # --- CHƯƠNG TRÌNH CHÍNH ---
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtWebEngineWidgets import *
+from PyQt5.QtCore import QUrl, QEvent, QObject, Qt
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout
+from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineProfile, QWebEngineSettings
 
 # Lớp trình duyệt tùy chỉnh để chặn menu chuột phải
 class CustomWebView(QWebEngineView):
     def contextMenuEvent(self, event):
-        # Không làm gì cả để menu không hiện ra
-        pass
+        pass # Vô hiệu hóa menu chuột phải
 
+# Lớp chặn chuột trái
 class ClickFilter(QObject):
     def eventFilter(self, obj, event):
         if event.type() == QEvent.MouseButtonPress:
@@ -35,25 +23,37 @@ class SmartTVBrowser(QMainWindow):
     def __init__(self):
         super(SmartTVBrowser, self).__init__()
 
-        # 1. Thiết lập User Agent Smart TV (Tizen OS)
-        self.user_agent = "Mozilla/5.0 (SMART-TV; Linux; Tizen 5.0) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/2.2 Chrome/63.0.3239.84 TV Safari/537.36"
+        # Tối ưu cấu hình WebEngine để tăng hiệu năng và chất lượng video
         self.profile = QWebEngineProfile.defaultProfile()
+        
+        # Cập nhật User-Agent Smart TV đời mới để mở khóa 1080p/4K
+        self.user_agent = "Mozilla/5.0 (LG Smart TV; OS LinuX; WebOS) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 LG Browser/8.00.00(TAV;1.0.0)"
         self.profile.setHttpUserAgent(self.user_agent)
 
-        # 2. Sử dụng CustomWebView đã chặn chuột phải
+        # Bật các tính năng tăng tốc phần cứng và phát video chất lượng cao
+        settings = self.profile.settings()
+        settings.setAttribute(QWebEngineSettings.PlaybackRequiresUserGesture, False)
+        settings.setAttribute(QWebEngineSettings.WebGLEnabled, True)
+        settings.setAttribute(QWebEngineSettings.Accelerated2dCanvasEnabled, True)
+        settings.setAttribute(QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
+
+        # Khởi tạo trình duyệt
         self.browser = CustomWebView()
         self.browser.setUrl(QUrl('https://www.youtube.com/tv')) 
         
-        # 3. Chặn chuột trái bằng Event Filter
+        # Chặn chuột trái
         self.filter = ClickFilter()
         self.browser.focusProxy().installEventFilter(self.filter)
 
-        # Căn chỉnh giao diện lấp đầy cửa sổ
+        # Đưa vào giao diện chính
         self.setCentralWidget(self.browser)
-        self.setWindowTitle("Smart TV")
+        self.setWindowTitle("YouTube Smart TV Client")
         self.showMaximized()
 
 if __name__ == "__main__":
+    # Đảm bảo tắt tính năng giải nén gây lỗi mã hóa của PyQt5 nếu chạy onefile
+    os.environ["QT_ANARCHY"] = "1" 
+    
     app = QApplication(sys.argv)
     window = SmartTVBrowser()
     sys.exit(app.exec_())
