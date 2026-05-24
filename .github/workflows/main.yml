@@ -24,20 +24,20 @@ jobs:
     - name: Install build tools
       run: |
         python -m pip install --upgrade pip
-        pip install pyinstaller autopep8
-        if (Test-Path requirements.txt) { pip install -r requirements.txt }
+        pip install pyinstaller autopep8 PyQt5 PyQtWebEngine
 
     - name: Auto-fix Python Indentation
       run: |
         autopep8 --in-place --aggressive --aggressive main.py
 
-    - name: Build Single EXE
+    - name: Build Single EXE (Bản 1 file chống lỗi giải nén)
       run: |
-        pyinstaller --onefile --noconsole --name "yt-tv-in-windows" main.py
+        # Thêm --collect-all PyQt5 và --collect-all PyQtWebEngine để gom toàn bộ file DLL chuẩn
+        pyinstaller --onefile --noconsole --name "yt-tv-in-windows" --collect-all PyQt5 --collect-all PyQtWebEngine main.py
 
-    - name: Build Directory
+    - name: Build Directory (Bản nhiều file)
       run: |
-        pyinstaller --noconsole --name "yt-tv-in-windows-folder" --distpath ./dist-folder main.py
+        pyinstaller --noconsole --name "yt-tv-in-windows-folder" --distpath ./dist-folder --collect-all PyQt5 --collect-all PyQtWebEngine main.py
 
     - name: Create ZIP
       run: |
@@ -47,11 +47,11 @@ jobs:
     - name: Create Release and Upload Assets
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: "1.0.0"  # Đã đổi thành tag cố định theo ý bạn
-        name: "Release 1.0.0 (Build ${{ github.run_number }})" # Tên release vẫn có số build để dễ phân biệt
+        tag_name: "1.0.1"
+        name: "Release v1.0.1"
         draft: false
         prerelease: false
-        make_latest: true # Luôn đánh dấu đây là bản mới nhất
+        make_latest: true
         files: |
           dist/yt-tv-in-windows.exe
           dist/yt-tv-in-windows.zip
