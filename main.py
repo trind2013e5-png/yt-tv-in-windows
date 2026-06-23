@@ -7,7 +7,7 @@ from PyQt5.QtWebEngineWidgets import (
 )
 from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
 
-# 🛡️ PATCH 3: URL Navigation Policy
+# 🛡️ PATCH 3: URL Navigation Policy - Chặn đứng các trang web độc hại
 class SecurityInterceptor(QWebEngineUrlRequestInterceptor):
     def __init__(self):
         super().__init__()
@@ -24,10 +24,12 @@ class SecurityInterceptor(QWebEngineUrlRequestInterceptor):
             return
         info.block(False)
 
+# Lớp trình duyệt vô hiệu hóa menu chuột phải
 class CustomWebView(QWebEngineView):
     def contextMenuEvent(self, event):
-        pass  # Vô hiệu hóa menu chuột phải
+        pass
 
+# Lớp chặn tương tác chuột trái
 class ClickFilter(QObject):
     def eventFilter(self, obj, event):
         if event.type() == QEvent.MouseButtonPress:
@@ -41,57 +43,76 @@ class SmartTVBrowser(QMainWindow):
 
         self.profile = QWebEngineProfile.defaultProfile()
         
-        # 📺 USER AGENT: Chromecast with Google TV (Mới, chuẩn Google, ít bị nghi ngờ nhất)
+        # 📺 USER AGENT: Sony Bravia 4K Android TV (Chuẩn, không dính lỗi Cast)
         self.user_agent = (
-            "Mozilla/5.0 (Linux; Android 12; Chromecast with Google TV Build/STTE.220621.019.A2; wv) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/116.0.0.0 Mobile Safari/537.36 "
-            "CrKey/1.66.332856"
+            "Mozilla/5.0 (Linux; aarch64; Android 11; BRAVIA 4K VH21 Build/RBT1.210323.011) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 SMART-TV"
         )
         self.profile.setHttpUserAgent(self.user_agent)
 
-        # 🚀 ANTI-DETECT JAVASCRIPT INJECTION: Xóa dấu vết PC, giả mạo thông số phần cứng
-        # Đoạn script này chạy trước khi YouTube kịp load để lừa hệ thống kiểm tra
+        # 🚀 ANTI-DETECT PRO JAVASCRIPT INJECTION: Giả mạo phần cứng toàn diện
         stealth_script = QWebEngineScript()
         stealth_script.setSourceCode("""
-            // Ẩn cờ tự động hóa (Webdriver)
-            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
-            // Đổi nền tảng thành chip ARM của TV thay vì Win32/x86
+            // 1. Ẩn cờ tự động hóa (Webdriver)
+            Object.defineProperty(navigator, 'webdriver', {get: () => false});
+            
+            // 2. Đổi nền tảng thành chip ARM của TV
             Object.defineProperty(navigator, 'platform', {get: () => 'Linux armv8l'});
-            // Giả lập RAM 4GB và CPU 8 nhân của TV Box cao cấp
+            
+            // 3. Giả lập RAM 4GB và CPU 8 nhân
             Object.defineProperty(navigator, 'deviceMemory', {get: () => 4});
             Object.defineProperty(navigator, 'hardwareConcurrency', {get: () => 8});
-            // Chặn báo cáo ngôn ngữ thực tế của máy tính nếu cần
-            Object.defineProperty(navigator, 'languages', {get: () => ['en-US', 'en']});
+            
+            // 4. Giả mạo GPU (WebGL) thành chip đồ họa của TV thay vì Card màn hình PC
+            const getParameter = WebGLRenderingContext.prototype.getParameter;
+            WebGLRenderingContext.prototype.getParameter = function(parameter) {
+                if (parameter === 37445) {
+                    return 'ARM'; // UNMASKED_VENDOR_WEBGL
+                }
+                if (parameter === 37446) {
+                    return 'Mali-G71'; // UNMASKED_RENDERER_WEBGL
+                }
+                return getParameter.call(this, parameter);
+            };
+            
+            // 5. Qua mặt User-Agent Client Hints (API phát hiện trình duyệt mới của Google)
+            if (navigator.userAgentData) {
+                Object.defineProperty(navigator.userAgentData, 'platform', {get: () => 'Android'});
+                Object.defineProperty(navigator.userAgentData, 'mobile', {get: () => false});
+            }
         """)
         stealth_script.setInjectionPoint(QWebEngineScript.DocumentCreation)
         stealth_script.setWorldId(QWebEngineScript.MainWorld)
         self.profile.scripts().insert(stealth_script)
 
+        # Kích hoạt bộ chặn bảo mật URL
         self.security_interceptor = SecurityInterceptor()
         self.profile.setRequestInterceptor(self.security_interceptor)
 
+        # Tối ưu đồ họa và bật DRM (Widevine) để phân giải cao nhất
         settings = self.profile.settings()
         settings.setAttribute(QWebEngineSettings.PlaybackRequiresUserGesture, False)
         settings.setAttribute(QWebEngineSettings.WebGLEnabled, True)
         settings.setAttribute(QWebEngineSettings.Accelerated2dCanvasEnabled, True)
-        # Bật Plugins để hỗ trợ Widevine DRM (Giúp giải mã video 1080p/4K bản quyền nếu có)
         settings.setAttribute(QWebEngineSettings.PluginsEnabled, True) 
         
-        # 🛡️ PATCH 1: RCE Protection
+        # 🛡️ PATCH 1: Khóa chặt lỗ hổng RCE từ file cục bộ
         settings.setAttribute(QWebEngineSettings.LocalContentCanAccessRemoteUrls, False)
 
+        # Khởi tạo trình duyệt
         self.browser = CustomWebView()
         self.browser.setUrl(QUrl('https://www.youtube.com/tv'))
 
+        # Lọc sự kiện click chuột
         self.filter = ClickFilter()
         self.browser.focusProxy().installEventFilter(self.filter)
 
         self.setCentralWidget(self.browser)
-        self.setWindowTitle("YouTube Smart TV Client (Anti-Detect Mode)")
+        self.setWindowTitle("YouTube Smart TV Client (Ultimate Anti-Detect Mode)")
         self.showMaximized()
 
 if __name__ == "__main__":
-    # 🛡️ PATCH 2: Security Sandbox
+    # 🛡️ PATCH 2: Kích hoạt Security Sandbox
     if getattr(sys, 'frozen', False):
         os.environ["QTWEBENGINE_DISABLE_SANDBOX"] = "0"
     
