@@ -56,8 +56,8 @@ jobs:
     # ==========================================
     - name: Build [Nuitka - ZIP]
       run: |
-        # Đã sửa cú pháp chính xác: --enable-plugin=pyqt5
-        nuitka --standalone --enable-plugin=pyqt5 --windows-disable-console --output-dir=build_nuitka_dir main.py
+        # Thêm --assume-yes-for-downloads và sửa thành --windows-console-mode=disable
+        nuitka --standalone --enable-plugin=pyqt5 --windows-console-mode=disable --assume-yes-for-downloads --output-dir=build_nuitka_dir main.py
         Compress-Archive -Path ./build_nuitka_dir/main.dist/* -DestinationPath ./dist/nuitka-yt-tv.zip
 
     # ==========================================
@@ -65,12 +65,12 @@ jobs:
     # ==========================================
     - name: Build [Nuitka - EXE]
       run: |
-        # Đã sửa cú pháp chính xác: --enable-plugin=pyqt5
-        nuitka --onefile --enable-plugin=pyqt5 --windows-disable-console --output-dir=build_nuitka_one main.py
+        # Thêm --assume-yes-for-downloads và sửa thành --windows-console-mode=disable
+        nuitka --onefile --enable-plugin=pyqt5 --windows-console-mode=disable --assume-yes-for-downloads --output-dir=build_nuitka_one main.py
         Move-Item -Path ./build_nuitka_one/main.exe -Destination ./dist/nuitka-yt-tv.exe
 
     # ==========================================
-    # TẠO RELEASE VÀ UPLOAD ĐỦ 4 FILE THÀNH PHẨM
+    # TẠO RELEASE VÀ UPLOAD 4 FILE
     # ==========================================
     - name: Create Release and Upload Assets
       uses: softprops/action-gh-release@v2
